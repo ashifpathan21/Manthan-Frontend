@@ -62,7 +62,7 @@ export function Login() {
               <Input
                 id="username"
                 type="text"
-                placeholder="johndoe"
+                placeholder="user"
                 value={formData.username}
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
@@ -75,7 +75,7 @@ export function Login() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="123456"
                 value={formData.password}
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
