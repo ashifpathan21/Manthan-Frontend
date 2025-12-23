@@ -32,6 +32,7 @@ export function Jobs() {
     title: "",
     description: "",
     skills: "",
+    location: "",
     experience: 0,
     vacancies: 1,
   });
@@ -41,6 +42,7 @@ export function Jobs() {
       title: "",
       description: "",
       skills: "",
+      location: "",
       experience: 0,
       vacancies: 1,
     });
@@ -106,6 +108,7 @@ export function Jobs() {
       skills: (job.skillRequired || []).join(", "),
       experience: job.experience ?? 0,
       vacancies: job.vacancies ?? 1,
+      location: job.location || "",
     });
     setIsDialogOpen(true);
   };
@@ -171,6 +174,14 @@ export function Jobs() {
                 value={formData.skills}
                 onChange={(e) =>
                   setFormData({ ...formData, skills: e.target.value })
+                }
+                required
+              />
+              <Label>Location : Remote , Banglore etc etc</Label>
+              <Input
+                value={formData.location}
+                onChange={(e) =>
+                  setFormData({ ...formData, location: e.target.value })
                 }
                 required
               />
@@ -271,7 +282,8 @@ export function Jobs() {
                 </div>
 
                 <p className="text-xs text-gray-500">
-                  Created at: {new Date(job.createdAt).toLocaleString()}
+                  Created at:{" "}
+                  {new Date(job.createdAt).toLocaleString() ?? Date.now()}
                 </p>
               </CardContent>
             </Card>
