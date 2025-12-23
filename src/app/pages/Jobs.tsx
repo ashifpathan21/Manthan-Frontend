@@ -69,6 +69,7 @@ export function Jobs() {
 
     const payload = {
       ...formData,
+      experienceRequired: formData.experience,
       requiredSkills: formData.skills.split(",").map((s) => s.trim()),
     };
 
@@ -282,8 +283,10 @@ export function Jobs() {
                 </div>
 
                 <p className="text-xs text-gray-500">
-                  Created at:{" "}
-                  {new Date(job.createdAt).toLocaleString() ?? Date.now()}
+                  Created at:
+                  {job.createedAt
+                    ? new Date(job.createedAt).toLocaleDateString()
+                    : "N/A"}
                 </p>
               </CardContent>
             </Card>
