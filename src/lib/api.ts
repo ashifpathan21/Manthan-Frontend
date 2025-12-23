@@ -32,7 +32,7 @@ export const authAPI = {
 
 // Job endpoints
 export const jobAPI = {
-  create: (data: { title: string; description: string; skills: string[]; experience: number; vacancies: number }) =>
+  create: (data: { title: string; description: string; requiredSkills: string[]; experience: number; vacancies: number }) =>
     api.post('/job', data),
   getAll: () => api.get('/job'),
   update: (id: string, data: any) => api.put(`/job/${id}`, data),
