@@ -1,291 +1,323 @@
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { applicantAPI, projectAPI } from "../../lib/api";
 import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Card, CardContent } from "../components/ui/card";
-import { ExternalLink, ShieldCheck } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  ExternalLink,
+  FileText,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
 
-/* ======================= TYPES ======================= */
+type Tab =
+  | "overview"
+  | "skills"
+  | "experience"
+  | "projects"
+  | "education"
+  | "certificates"
+  | "social";
 
-interface SocialLinks {
-  email?: string;
-  github?: string;
-  linkedin?: string;
-}
-
-interface Experience {
-  _id: string;
-  title: string;
-  company: string;
-  description: string;
-  duration: number;
-}
-
-interface Project {
-  _id: string;
-  title: string;
-  description: string;
-  link?: string;
-}
-
-interface Qualification {
-  _id: string;
-  institute: string;
-  course: string;
-  marks: number;
-}
-
-interface Applicant {
-  _id: string;
-  name: string;
-  location?: string;
-  score: number;
-  status: "VERIFIED" | "UNVERIFIED" | "FAILED";
-  failureReason?: string;
-  verdict?: string;
-
-  social?: SocialLinks;
-  skills: string[];
-  experience: Experience[];
-  projects: Project[];
-  qualifications: Qualification[];
-}
-
-/* Project analysis response */
-interface ProjectAnalysisResult {
-  isSafe: boolean;
-  threat: unknown;
-  seo?: {
-    score?: number;
-  };
-}
-
-type ProjectAnalysisMap = Record<string, ProjectAnalysisResult>;
-
-/* ======================= COMPONENT ======================= */
-
-const Applicant = () => {
-  const { id } = useParams<{ id: string }>();
+export default function Applicant() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { applicantIds = [], currentIndex = 0 } = location.state || {};
 
-  const [applicant, setApplicant] = useState<Applicant | null>(
-    (location.state as { applicant?: Applicant })?.applicant || null
-  );
-  const [loading, setLoading] = useState<boolean>(!applicant);
-  const [verifying, setVerifying] = useState<boolean>(false);
-  const [projectChecks, setProjectChecks] =
-    useState<ProjectAnalysisMap>({});
+  const [index, setIndex] = useState(currentIndex);
+  const [applicant, setApplicant] = useState<any>(null);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [loading, setLoading] = useState(true);
 
-  /* ---------------- FETCH APPLICANT (ON REFRESH SAFE) ---------------- */
+  /* ================= FETCH ================= */
   useEffect(() => {
-    if (!applicant && id) {
-      applicantAPI
-        .getById(id)
-        .then((res) => setApplicant(res.data.data as Applicant))
-        .catch(() => toast.error("Failed to load applicant"))
-        .finally(() => setLoading(false));
-    }
-  }, [id, applicant]);
+    if (!applicantIds[index]) return;
 
-  /* ---------------- VERIFY APPLICANT ---------------- */
-  const handleVerify = async () => {
-    if (!applicant) return;
+    setLoading(true);
+    applicantAPI
+      .getById(applicantIds[index])
+      .then((res) => setApplicant(res.data.data))
+      .catch(() => toast.error("Failed to load applicant"))
+      .finally(() => setLoading(false));
+  }, [index, applicantIds]);
 
+  /* ================= GUARDS ================= */
+  if (!applicantIds.length) {
+    return (
+      <Card className="p-6 text-center text-gray-500">
+        <AlertTriangle className="mx-auto mb-2" />
+        No applicants available
+      </Card>
+    );
+  }
+
+  if (loading) return <div className="py-20 text-center">Loading…</div>;
+  if (!applicant) return null;
+
+  /* ================= ACTIONS ================= */
+  const verifySocial = async () => {
     try {
-      setVerifying(true);
+      toast.loading("Verifying social profiles…");
       const res = await applicantAPI.verifyById(applicant._id);
-      setApplicant(res.data.data as Applicant);
-      toast.success("Applicant verification completed");
-    } catch {
-      toast.error("Verification failed");
-    } finally {
-      setVerifying(false);
+      setApplicant(res.data.data);
+      toast.success("Social verification complete");
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || "Verification failed");
     }
   };
 
-  /* ---------------- PROJECT ANALYSIS ---------------- */
-  const analyzeProject = async (url: string) => {
+  const analyseProject = async (url: string) => {
     try {
+      toast.loading("Analyzing project…");
       const res = await projectAPI.analyse(url);
-      setProjectChecks((prev) => ({
-        ...prev,
-        [url]: res.data.data as ProjectAnalysisResult,
-      }));
+      toast.success(`Safe: ${res.data.data.isSafe ? "Yes" : "No"}`);
     } catch {
       toast.error("Project analysis failed");
     }
   };
 
-  /* ---------------- LOADING ---------------- */
-  if (loading || !applicant) {
-    return <div className="text-center py-20">Loading applicant…</div>;
-  }
-
-  /* ======================= UI ======================= */
-
+  /* ================= UI ================= */
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+      {/* ================= HEADER ================= */}
+      <Card>
+        <CardContent className="p-6 flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-semibold">{applicant.name}</h2>
+            <p className="text-sm text-gray-500">{applicant.location}</p>
+            <p className="text-sm text-gray-500">{applicant.social?.email}</p>
+            <p className="text-sm text-gray-500">
+              📞 {applicant.social?.Phone}
+            </p>
+          </div>
 
-      {/* BASIC INFO */}
-      <section className="space-y-2">
-        <h1 className="text-3xl font-bold">{applicant.name}</h1>
-        {applicant.location && (
-          <p className="text-gray-600">{applicant.location}</p>
-        )}
-        {applicant.social?.email && (
-          <p className="text-sm">{applicant.social.email}</p>
-        )}
+          <div className="text-right space-y-1">
+            <p className="text-sm text-gray-500">Match Score</p>
+            <p className="text-4xl font-bold">{applicant.score}</p>
+            <Badge>{applicant.status}</Badge>
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="flex items-center gap-3 mt-2">
-          <Badge
-            variant={
-              applicant.status === "VERIFIED"
-                ? "default"
-                : applicant.status === "FAILED"
-                ? "destructive"
-                : "secondary"
-            }
+      {/* ================= VERDICT ================= */}
+      <Card className="border-l-4 border-green-500">
+        <CardContent className="p-4">
+          <p className="font-semibold mb-1">Verdict</p>
+          <p className="text-sm text-gray-700">{applicant.verdict}</p>
+
+          {applicant.failureReason && (
+            <p className="text-sm text-red-600 mt-2">
+              ⚠ {applicant.failureReason}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ================= NAV ================= */}
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          disabled={index === 0}
+          onClick={() => setIndex((i: number) => i - 1)}
+        >
+          <ChevronLeft /> Previous
+        </Button>
+
+        <Button
+          variant="outline"
+          disabled={index === applicantIds.length - 1}
+          onClick={() => setIndex((i: number) => i + 1)}
+        >
+          Next <ChevronRight />
+        </Button>
+      </div>
+
+      {/* ================= TABS ================= */}
+      <div className="flex gap-2 flex-wrap">
+        {[
+          "overview",
+          "skills",
+          "experience",
+          "projects",
+          "education",
+          "certificates",
+          "social",
+        ].map((t) => (
+          <Button
+            key={t}
+            size="sm"
+            variant={tab === t ? "default" : "outline"}
+            onClick={() => setTab(t as Tab)}
           >
-            {applicant.status}
-          </Badge>
+            {t.toUpperCase()}
+          </Button>
+        ))}
 
-          <span className="text-sm text-gray-500">
-            Score: {applicant.score}
-          </span>
-        </div>
-      </section>
+        <Button
+          variant="secondary"
+          onClick={() => window.open(applicant.resume?.cloudinary?.url , "_blank")}
+        >
+          <FileText className="w-4 h-4 mr-1" />
+          View Resume
+        </Button>
+      </div>
 
-      {/* SKILLS */}
-      <section>
-        <h2 className="font-semibold mb-2">Skills</h2>
-        <div className="flex flex-wrap gap-2">
-          {applicant.skills.map((skill) => (
-            <Badge key={skill} variant="secondary">
-              {skill}
-            </Badge>
-          ))}
-        </div>
-      </section>
+      {/* ================= TAB CONTENT ================= */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{tab.toUpperCase()}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* OVERVIEW */}
+          {tab === "overview" && (
+            <>
+              <p>
+                <b>Status:</b> {applicant.status}
+              </p>
+            </>
+          )}
 
-      {/* EXPERIENCE */}
-      <section>
-        <h2 className="font-semibold mb-3">Experience</h2>
-        <div className="space-y-3">
-          {applicant.experience.map((exp) => (
-            <Card key={exp._id}>
-              <CardContent className="p-4 space-y-1">
-                <p className="font-medium">{exp.title}</p>
-                <p className="text-sm text-gray-600">{exp.company}</p>
-                <p className="text-sm">{exp.description}</p>
-                <p className="text-xs text-gray-400">
-                  Duration: {exp.duration} months
+          {/* SKILLS */}
+          {tab === "skills" && (
+            <div className="flex flex-wrap gap-2">
+              {applicant.skills.map((s: string) => (
+                <Badge key={s} variant="secondary">
+                  {s}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* EXPERIENCE */}
+          {tab === "experience" &&
+            applicant.experience.map((e: any) => (
+              <Card key={e._id} className="p-4">
+                <p className="font-semibold">{e.title}</p>
+                <p className="text-sm text-gray-500">
+                  {e.company} • {e.duration} months
                 </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+                <p className="text-sm mt-2">{e.description}</p>
+              </Card>
+            ))}
 
-      {/* PROJECTS */}
-      <section>
-        <h2 className="font-semibold mb-3">Projects</h2>
-        <div className="space-y-4">
-          {applicant.projects.map((project) => (
-            <Card key={project._id}>
-              <CardContent className="p-4 space-y-2">
-                <p className="font-medium">{project.title}</p>
-                <p className="text-sm text-gray-600">
-                  {project.description}
-                </p>
+          {/* PROJECTS */}
+          {tab === "projects" &&
+            applicant.projects.map((p: any) => (
+              <Card key={p._id} className="p-4">
+                <p className="font-semibold">{p.title}</p>
+                <p className="text-sm text-gray-600 mb-2">{p.description}</p>
 
-                {project.link && (
-                  <div className="flex items-center gap-3">
-                    <a
-                      href={project.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 flex items-center gap-1"
-                    >
-                      Visit Project <ExternalLink className="w-3 h-3" />
-                    </a>
-
+                {p.link && (
+                  <div className="flex gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => analyzeProject(project.link!)}
+                      onClick={() => window.open(p.link, "_blank")}
                     >
-                      SEO & Threat Check
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      View Repo
+                    </Button>
+
+                    <Button size="sm" onClick={() => analyseProject(p.link)}>
+                      Threat & SEO
                     </Button>
                   </div>
                 )}
+              </Card>
+            ))}
 
-                {project.link &&
-                  projectChecks[project.link] && (
-                    <div className="text-xs space-y-1 mt-2">
-                      <p>
-                        Safe:
-                        {projectChecks[project.link].isSafe
-                          ? " Yes"
-                          : " No"}
-                      </p>
-                      <p>
-                        SEO Score:
-                        {projectChecks[project.link].seo?.score ??
-                          " N/A"}
-                      </p>
-                    </div>
+          {/* EDUCATION */}
+          {tab === "education" &&
+            applicant.qualifications.map((q: any) => (
+              <Card key={q._id} className="p-4">
+                <p className="font-semibold">{q.course}</p>
+                <p className="text-sm">{q.institute}</p>
+                <p className="text-sm text-gray-500">CGPA: {q.marks}</p>
+              </Card>
+            ))}
+
+          {/* CERTIFICATES */}
+          {tab === "certificates" &&
+            applicant.certificates.map((c: any) => (
+              <p key={c._id} className="text-sm">
+                • {c.title}
+              </p>
+            ))}
+
+          {/* SOCIAL */}
+          {tab === "social" && (
+            <>
+              <div className="p-3 border  grid lg:grid-cols-4 md:grid-cols-3 grid-cols-2 px-6 capitalize text-lg font-semibold ">
+                {Object.entries(applicant.social).map(
+                  ([key, value]) =>
+                    key !== "email" &&
+                    key !== "Phone" &&
+                    value !== "" && (
+                      <div>
+                        {!Array.isArray(value)
+                          ? key && (
+                              <Button
+                                className="text-cyan-800  capitalize "
+                                onClick={() =>
+                                  window.open(value as string, "_blank")
+                                }
+                                variant={"link"}
+                              >
+                                {key}
+                              </Button>
+                            )
+                          : value?.length > 0 && (
+                              <div className="flex justify-between p-2 ">
+                                <p>{key}</p>
+                                <div className="flex flex-col gap-2 p-1 ">
+                                  {value?.map((value: string, i) => (
+                                    <Button
+                                      className="text-cyan-900 capitalize "
+                                      onClick={() =>
+                                        window.open(value, "_blank")
+                                      }
+                                      variant={"link"}
+                                    >
+                                      Site {i + 1}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                      </div>
+                    )
+                )}
+              </div>
+              <Button onClick={verifySocial}>
+                <ShieldCheck className="w-4 h-4 mr-1" />
+                Verify Social Authenticity
+              </Button>
+
+              {applicant.authentication.map((a: any, i: number) => (
+                <Card key={i} className="p-3">
+                  <p className="font-medium capitalize">{a.platform}</p>
+                  {a.error ? (
+                    <p className="text-red-500 text-sm">{a.error}</p>
+                  ) : (
+                    <pre className="text-xs">
+                      {JSON.stringify(a.stats, null, 2)}
+                    </pre>
                   )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* QUALIFICATIONS */}
-      <section>
-        <h2 className="font-semibold mb-3">Qualifications</h2>
-        <div className="space-y-2">
-          {applicant.qualifications.map((q) => (
-            <div key={q._id} className="text-sm">
-              <p className="font-medium">{q.course}</p>
-              <p className="text-gray-600">{q.institute}</p>
-              <p className="text-xs">Marks: {q.marks}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* VERIFICATION */}
-      <section className="border-t pt-6 space-y-3">
-        <Button
-          onClick={handleVerify}
-          disabled={verifying}
-          className="flex items-center gap-2"
-        >
-          <ShieldCheck className="w-4 h-4" />
-          {verifying ? "Verifying..." : "Verify Skills & Social Profiles"}
-        </Button>
-
-        {applicant.failureReason && (
-          <p className="text-sm text-red-500">
-            Failure Reason: {applicant.failureReason}
-          </p>
-        )}
-      </section>
-
-      {/* VERDICT */}
-      {applicant.verdict && (
-        <section>
-          <h2 className="font-semibold mb-2">Final Verdict</h2>
-          <p className="text-sm text-gray-700">
-            {applicant.verdict}
-          </p>
-        </section>
-      )}
+                </Card>
+              ))}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default Applicant;
+}

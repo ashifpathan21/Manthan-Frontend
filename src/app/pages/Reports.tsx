@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { reportAPI, jobAPI, folderAPI } from "../../lib/api";
 import { Button } from "../components/ui/button";
@@ -9,7 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "../components/ui/card";
-import { Plus, FileText, Eye, TrendingUp } from "lucide-react";
+import { Plus, FileText, Eye, TrendingUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -67,6 +67,17 @@ export function Reports() {
     console.log(reports);
   }, []);
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this report?")) return;
+    try {
+      await reportAPI.delete(id);
+      toast.success("Report deleted successfully");
+      await fetchData();
+    } catch (error) {
+      toast.error("Failed to delete report");
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -85,7 +96,7 @@ export function Reports() {
       await reportAPI.create({
         jobId: formData.jobId,
         folderId: formData.folderId,
-        priorities: {
+        priority: {
           skills: formData.skills,
           experience: formData.experience,
           projects: formData.projects,
@@ -120,6 +131,29 @@ export function Reports() {
     );
   }
 
+  const reportStatus: any = {
+    DONE: (
+      <span className="px-2 p-1  text-sm font-mono font-semibold rounded-2xl text-slate-800 bg-green-500">
+        Done
+      </span>
+    ),
+    FAILED: (
+      <span className="px-2 p-1 text-sm font-mono font-semibold rounded-2xl text-slate-800 bg-red-500">
+        Failed
+      </span>
+    ),
+    PROCESSING: (
+      <span className="px-2 text-sm font-mono font-semibold p-1 rounded-2xl text-slate-800 bg-blue-500">
+        Processing
+      </span>
+    ),
+    PENDING: (
+      <span className="px-2 p-1 text-sm font-mono font-semibold rounded-2xl text-slate-800 bg-gray-500">
+        Pending
+      </span>
+    ),
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -136,7 +170,7 @@ export function Reports() {
               Generate Report
             </Button>
           </DialogTrigger>
-          <DialogContent >
+          <DialogContent className="h-full">
             <DialogHeader>
               <DialogTitle>Generate New Report</DialogTitle>
             </DialogHeader>
@@ -301,14 +335,14 @@ export function Reports() {
         </Dialog>
       </div>
 
-      {reports?.length === 0 ? (
+      {reports?.length === 0 ? ( 
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <TrendingUp className="w-12 h-12 text-gray-400 mb-4" />
             <h3 className="text-gray-900 mb-2">No reports yet</h3>
             <p className="text-gray-600 text-center mb-4">
               Generate your first report to analyze candidates
-            </p>
+            </p> 
             <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Generate Report
@@ -334,6 +368,9 @@ export function Reports() {
                       </CardTitle>
                       <CardDescription className="truncate">
                         {report.folder?.title || "Folder"}
+                      </CardDescription>
+                      <CardDescription>
+                        {reportStatus[report?.status]}
                       </CardDescription>
                     </div>
                   </div>
@@ -370,15 +407,24 @@ export function Reports() {
                     <span className="text-gray-600">Applicants: </span>
                     <span>{report.results?.length || 0}</span>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => viewReport(report._id)}
-                  >
-                    <Eye className="w-3 h-3 mr-1" />
-                    View Details
-                  </Button>
+                  <div className="flex gap-3 items-center max-w-full ">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => viewReport(report._id)}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      View Details
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(report._id)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -387,4 +433,4 @@ export function Reports() {
       )}
     </div>
   );
-}
+} 

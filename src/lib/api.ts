@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://smarthire-backend-y1sr.onrender.com/api/v1';
+// const API_BASE_URL = '';
+//@ts-ignore
+const API_BASE_URL = import.meta.env.VITE_BASE_URL
+console.log(API_BASE_URL)
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -43,6 +46,7 @@ export const folderAPI = {
     api.post('/folder', data),
   getAll: () => api.get('/folder'),
   getById: (id: string) => api.get(`/folder/${id}`),
+  update: (id: string, data: { title: string }) => api.put(`/folder/${id}`, data),
   delete: (id: string) => api.delete(`/folder/${id}`),
 };
 
@@ -60,11 +64,11 @@ export const reportAPI = {
   create: (data: {
     jobId: string;
     folderId: string;
-    priorities: { skills: number; experience: number; projects: number, location: number, qualifications: number };
+    priority: { skills: number; experience: number; projects: number, location: number, qualifications: number };
   }) => api.post('/report', data),
   getAll: () => api.get('/report'),
   getById: (id: string) => api.get(`/report/${id}`),
-  getApplicants: (id: string) => api.get(`/report/${id}/applicants`),
+  delete: (id: string) => api.delete(`/report/${id}`)
 };
 
 // Applicant endpoints
@@ -75,13 +79,13 @@ export const applicantAPI = {
 
   // Verify applicant socials & skills
   verifyById: (id: string) =>
-    api.post(`/applicant/verify/${id}`),
+    api.post(`/applicant/${id}`),
 };
 
 // Project endpoints
 export const projectAPI = {
   analyse: (url: string) =>
-    api.post('/project/analyse', { url }),
+    api.post('/applicant/project/analyse', { url }),
 };
 
 export default api;

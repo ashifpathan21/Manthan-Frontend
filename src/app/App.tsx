@@ -10,6 +10,7 @@ import { Reports } from "./pages/Reports";
 import { ReportDetail } from "./pages/ReportDetail";
 import { Toaster } from "./components/ui/sonner";
 import Applicant from "./pages/Applicant";
+import Resumes from "./pages/Resumes";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:id" element={<ReportDetail />} />
           <Route path="applicant/:id" element={<Applicant />} />
+          <Route path="resumes/:folderId" element={<Resumes />} />
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
