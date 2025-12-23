@@ -70,7 +70,7 @@ export function Jobs() {
     const payload = {
       ...formData,
       experienceRequired: formData.experience,
-      requiredSkills: formData.skills.split(",").map((s) => s.trim()),
+      skillRequired: formData.skills.split(",").map((s) => s.trim()),
     };
 
     try {
