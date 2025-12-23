@@ -35,7 +35,6 @@ export function ReportDetail() {
       .getById(id)
       .then((res) => {
         if (!res?.data?.data) throw new Error();
-        console.log(res.data.data);
         setReport(res.data.data);
         setApplicants(res.data.data.results || []);
       })

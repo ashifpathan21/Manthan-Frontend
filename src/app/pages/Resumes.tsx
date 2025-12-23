@@ -19,7 +19,6 @@ export default function Resumes() {
   const fetchResumes = async () => {
     try {
       const { data } = await folderAPI.getById(folderId!);
-      console.log(data);
       setResumes(data.data.totalFiles);
     } catch {
       toast.error("Failed to fetch resumes");

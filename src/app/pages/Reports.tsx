@@ -64,7 +64,6 @@ export function Reports() {
 
   useEffect(() => {
     fetchData();
-    console.log(reports);
   }, []);
 
   const handleDelete = async (id: string) => {

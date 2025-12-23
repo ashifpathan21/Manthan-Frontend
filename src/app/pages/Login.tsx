@@ -30,7 +30,6 @@ export function Login() {
 
     try {
       const { data } = await authAPI.login(formData);
-      console.log(data);
       setToken(data.token);
 
       setUser(data.data);
@@ -38,7 +37,6 @@ export function Login() {
       toast.success("Login successful!");
       navigate("/dashboard");
     } catch (error: any) {
-      console.log(error);
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
